@@ -131,3 +131,6 @@ export PATH="$PATH:/usr/local/go/bin"
 
 source "$HOME/.homesick/repos/homeshick/homeshick.sh"
 source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
+
+# Use iso timestamps in `ls` and other commands.
+export TIME_STYLE="long-iso"
