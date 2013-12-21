@@ -123,6 +123,7 @@ fi
 
 # Add chruby.
 source /usr/local/share/chruby/chruby.sh
+source /usr/local/share/chruby/auto.sh
 
 # Add Go.
 export PATH="$PATH:/usr/local/go/bin"
