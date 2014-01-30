@@ -1,0 +1,13 @@
+[alias]
+	gl = log --format=format:\"%C(yellow bold)%h%Creset @ %C(blue)%cd%C(reset) » %C(white)%s%C(reset) (%C(green)%cN%C(reset)) %+d\" --topo-order --graph --date=iso
+	dc = diff --cached
+[user]
+	email = jxf@jxf.me
+	name = John Feminella
+[core]
+	editor = vim
+	excludesfile = /home/jxf/.gitignore-global
+[color]
+	ui = true
+[merge]
+	log = 1000
