@@ -121,6 +121,9 @@ if [ -f ~/.shell/shell-aliases.sh ]; then
   . ~/.shell/shell-aliases.sh
 fi
 
+# ls alias
+alias ls='ls -la --group-directories-first --color=auto'
+
 # Add chruby.
 source /usr/local/share/chruby/chruby.sh
 source /usr/local/share/chruby/auto.sh
