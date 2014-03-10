@@ -137,3 +137,5 @@ source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 
 # Use iso timestamps in `ls` and other commands.
 export TIME_STYLE="long-iso"
+
+export TERM=xterm-256color
