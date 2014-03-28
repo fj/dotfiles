@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ $(whoami) != "root" ]; then
+  echo "Must be root to change brightness."
+  exit 1
+fi
+
+if [[ $1 -le 0 && $1 -gt 100 ]]; then
+  echo "Brightness must be [1..100]."
+  exit 1
+fi
+
+backlight="/sys/class/backlight/acpi_video0/brightness";
+echo $1 | tee $backlight
