@@ -11,3 +11,5 @@
 	ui = true
 [merge]
 	log = 1000
+[push]
+	default = simple
