@@ -128,6 +128,12 @@ alias ls='ls -la --group-directories-first --color=auto'
 source /usr/local/share/chruby/chruby.sh
 source /usr/local/share/chruby/auto.sh
 
+# Load files from shell config.
+for f in ~/.config/shell/*; do
+  echo "⇒ $f"
+  . $f
+done
+
 # Add Go.
 export PATH="$PATH:/usr/local/go/bin"
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
