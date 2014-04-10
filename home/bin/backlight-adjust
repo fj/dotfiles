@@ -11,4 +11,5 @@ if [[ $1 -le 0 && $1 -gt 100 ]]; then
 fi
 
 backlight="/sys/class/backlight/acpi_video0/brightness";
-echo $1 | tee $backlight
+echo $(cat $backlight) ⇒ $1
+echo $1 > $backlight
