@@ -113,20 +113,11 @@ if ! shopt -oq posix; then
   fi
 fi
 
-if [ -f ~/.prompt ]; then
-  . ~/.prompt
-fi
-
-if [ -f ~/.shell/shell-aliases.sh ]; then
-  . ~/.shell/shell-aliases.sh
-fi
-
-# ls alias
-alias ls='ls -la --group-directories-first --color=auto'
-
-# Add chruby.
-source /usr/local/share/chruby/chruby.sh
-source /usr/local/share/chruby/auto.sh
+# Load files from shell config.
+for f in ~/.config/shell/*; do
+  echo "⇒ $f"
+  . $f
+done
 
 # Add Go.
 export PATH="$PATH:/usr/local/go/bin"
