@@ -28,9 +28,16 @@ function __prompt_reference() {
       else
         local ruby_version
         ruby_version=$(basename $RUBY_ROOT)
-        #local rbenv_gemset
-        #rbenv_gemset=$(rbenv gemset active | cut --delimiter=' ' --fields 1) || return
-        r="‹ruby:${ruby_version}@${rbenv_gemset}›"
+
+        local ruby_gempath
+        ruby_base_gempath=${GEM_PATH%%/.gem*}
+        if [ ${ruby_base_gempath} == ${HOME} ]; then
+          ruby_gempath="(global)"
+        else
+          ruby_gempath=$(basename ${ruby_base_gempath})
+        fi
+
+        r="‹ruby:${ruby_version}@${ruby_gempath}›"
       fi
       ;;
     virtualenv_info)
