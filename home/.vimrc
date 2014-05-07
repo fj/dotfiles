@@ -72,3 +72,6 @@ autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
 autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 
 colorscheme Tomorrow-Night-Bright
+if &diff
+  colorscheme desert256
+endif
