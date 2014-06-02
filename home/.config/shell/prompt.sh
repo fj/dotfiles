@@ -37,7 +37,7 @@ function __prompt_reference() {
           ruby_gempath=$(basename ${ruby_base_gempath})
         fi
 
-        r="‹ruby:${ruby_version}@${ruby_gempath}›"
+        r="‹ruby:${ruby_version}${ruby_gempath+@$ruby_gempath}›"
       fi
       ;;
     virtualenv_info)
