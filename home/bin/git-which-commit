@@ -1,0 +1,7 @@
+obj_name=""
+shift
+git log "" --pretty=format:'%T %h %s' | while read tree commit subject ; do
+    if git ls-tree -r  | grep -q "" ; then
+        echo  ""
+    fi
+done
