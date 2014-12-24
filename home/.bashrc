@@ -119,6 +119,9 @@ for f in ~/.config/shell/*; do
   . $f
 done
 
+# Add ~/bin to $PATH.
+export PATH="$HOME/bin:$PATH"
+
 # Add fasd (https://github.com/clvv/fasd) autocompletion.
 # Use the included 'z' alias to jump to different directories.
 eval "$(fasd --init auto)"
