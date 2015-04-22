@@ -25,6 +25,7 @@ git_bundles = [
 vim_org_scripts = [
   #  ["IndexedSearch", "7062",  "plugin"],
   #  ["jquery",        "12107", "syntax"],
+  #  ["vim-orgmode", "3642", "plugin"],
 ]
 
 require 'fileutils'
@@ -37,16 +38,16 @@ FileUtils.cd(bundles_dir)
 git_bundles.each do |url|
   dir = url.split('/').last.sub(/\.git$/, '')
 
-  puts "Removing #{dir}..."
+  puts "===== Removing #{dir}..."
   FileUtils.rm_rf(File.join(dir), :verbose => true)
 
-  puts "Cloning #{url} ⇒ #{dir}..."
+  puts "===== Cloning #{url} ⇒ #{dir}..."
   `git clone #{url} #{dir}`
   FileUtils.rm_rf(File.join(dir, ".git"), :verbose => true)
 end
 
 vim_org_scripts.each do |name, script_id, script_type|
-  puts "  Downloading #{name}"
+  puts "===== Downloading #{name}"
   local_file = File.join(name, script_type, "#{name}.vim")
   FileUtils.mkdir_p(File.dirname(local_file))
   File.open(local_file, "w") do |file|
