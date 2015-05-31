@@ -1,0 +1,33 @@
+#!/bin/bash
+if [[ $# -eq 0 ]]; then
+  echo 'usage: xfce-terminal-resize [<new-size> | +<size-increase> | -<size-decrease>]'
+  exit 1
+fi
+
+minimum_size=8
+size=`grep 'FontName' ~/.config/xfce4/terminal/terminalrc | cut -d' ' -f 2`
+
+case "$1" in
+  +[0123456789]*)
+    ;&
+  -[0123456789]*)
+    new_size=$((size + $1))
+    ;;
+  [0123456789]*)
+    new_size=$1
+    ;;
+  *)
+    echo 'usage: xfce-terminal-resize [<new-size> | +<size-increase> | -<size-decrease>]'
+    exit 1
+    ;;
+esac
+
+if [[ "$new_size" -lt "$minimum_size" ]]; then
+  echo "... refusing to set size $new_size < minimum size $minimum_size"
+  new_size=$minimum_size
+fi
+
+regexpr='s/FontName.*/FontName=Monospace '$new_size'/g'
+echo "... changing terminal size $size to $new_size"
+
+sed -i "$regexpr" ~/.config/xfce4/terminal/terminalrc
