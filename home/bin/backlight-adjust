@@ -1,6 +1,6 @@
 #!/bin/bash
 
-backlight="/sys/class/backlight/acpi_video0/brightness"
+backlight="/sys/class/backlight/intel_backlight/brightness"
 
 if [ -z "$1" ]; then
   echo $(cat $backlight)
@@ -11,9 +11,9 @@ else
   fi
 
   min_brightness=0
-  max_brightness=$(cat "/sys/class/backlight/acpi_video0/max_brightness")
+  max_brightness=$(cat "/sys/class/backlight/intel_backlight/max_brightness")
   if [[ $1 -le $min_brightness && $1 -gt $max_brightness ]]; then
-    echo "Brightness must be [1..100]."
+    echo "Brightness must be [$min_brightness .. $max_brightness]."
     exit 1
   fi
 
