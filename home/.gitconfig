@@ -6,10 +6,19 @@
 	name = John Feminella
 [core]
 	editor = vim
-	excludesfile = /home/jxf/.gitignore-global
+  excludesfile = /home/jxf/.gitignore-global
+[pager]
+	log = diff-highlight | less
+	show = diff-highlight | less
+	diff = diff-highlight | less
 [color]
 	ui = true
 [merge]
 	log = 1000
 [push]
 	default = simple
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
