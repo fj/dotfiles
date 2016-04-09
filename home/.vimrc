@@ -14,6 +14,13 @@ set directory=/tmp
 " Use ~/.vim for viminfo.
 set viminfo+=n~/.vim/viminfo
 
+" Use specific fonts in gui mode.
+if has("gui_running")
+  if has("gui_gtk2")
+    set guifont=Envy\ Code\ R\ 10
+  endif
+endif
+
 syntax on
 set mouse=a
 set number
