@@ -5,7 +5,7 @@ if [[ $# -eq 0 ]]; then
 fi
 
 minimum_size=8
-size=`grep 'FontName' ~/.config/xfce4/terminal/terminalrc | cut -d' ' -f 2`
+size=`grep 'FontName' ~/.config/xfce4/terminal/terminalrc | rev | cut -d' ' -f 1 | rev`
 
 case "$1" in
   +[0123456789]*)
@@ -27,7 +27,7 @@ if [[ "$new_size" -lt "$minimum_size" ]]; then
   new_size=$minimum_size
 fi
 
-regexpr='s/FontName.*/FontName=Monospace '$new_size'/g'
+regexpr='s/FontName=\(.*\) \(.*\)$/FontName=\1 '$new_size'/g'
 echo "... changing terminal size $size to $new_size"
 
 sed -i "$regexpr" ~/.config/xfce4/terminal/terminalrc
