@@ -114,24 +114,15 @@ if ! shopt -oq posix; then
 fi
 
 # Load files from shell config.
-for f in ~/.config/shell/*; do
-  echo "⇒ $f"
-  . $f
+export SHELL_SCRIPTS_HOME="$HOME/.config/shell"
+for f in $SHELL_SCRIPTS_HOME/*; do
+  echo "loading ⇒ $f"
+  source $f
 done
 
 # Add ~/bin, ~/opt/bin to $PATH.
 export PATH="$HOME/bin:$HOME/opt/bin:$PATH"
 
-# Add fasd (https://github.com/clvv/fasd) autocompletion.
-# Use the included 'z' alias to jump to different directories.
-eval "$(fasd --init auto)"
-
-# Add Go.
-export PATH="$PATH:/usr/local/go/bin"
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-
-source "$HOME/.homesick/repos/homeshick/homeshick.sh"
-source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 
 # Use iso timestamps in `ls` and other commands.
 export TIME_STYLE="long-iso"

@@ -3,21 +3,10 @@
 #env
 export TERM='xterm'
 
+#dependencies
+source "$SHELL_SCRIPTS_HOME/logging.sh"
+
 #prompt
-function __colorize() {
-  case $1 in
-  off)          echo -n '\e[0m' ;;
-  fg-red)       echo -n '\e[31m' ;;
-  fg-green)     echo -n '\e[32m' ;;
-  fg-blue)      echo -n '\e[34m' ;;
-  fg-b-green)   echo -n '\e[1;32m' ;;
-  fg-b-yellow)  echo -n '\e[1;33m' ;;
-  fg-b-blue)    echo -n '\e[1;34m' ;;
-  fg-b-cyan)    echo -n '\e[1;36m' ;;
-  fg-b-white)   echo -n '\e[1;37m' ;;
-  fg-b-red)     echo -n '\e[1;31m' ;;
-  esac
-}
 
 function __prompt_reference() {
   local r
@@ -70,21 +59,6 @@ function prompt_segment() {
   segment=$(__prompt_reference $1)
 
   echo -ne "$segment"
-}
-
-function colorize() {
-  __colorize $1
-
-  local arg
-  if [[ "$2" ]];
-  then
-    echo -ne "$2"
-  else
-    IFS= read -r arg;
-    echo -ne "$arg";
-  fi
-
-  __colorize 'off'
 }
 
 function set_bash_prompt() {
