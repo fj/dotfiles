@@ -1,5 +1,5 @@
 # More verbose, colorful ls.
-alias ls='ls -l --all --group-directories-first --color=auto'
+alias ls='ls -p -l --all --group-directories-first --color=auto'
 
 function mkcd {
   if [ ! -n "$1" ]; then
