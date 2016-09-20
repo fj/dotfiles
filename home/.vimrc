@@ -17,7 +17,7 @@ set viminfo+=n~/.vim/viminfo
 " Use specific fonts in gui mode.
 if has("gui_running")
   if has("gui_gtk2")
-    set guifont=Fantasque\ Sans\ Mono\ 16
+    set guifont=Fantasque\ Sans\ Mono\ 12
   endif
 endif
 
