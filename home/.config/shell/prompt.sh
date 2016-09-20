@@ -61,6 +61,10 @@ function prompt_segment() {
   echo -ne "$segment"
 }
 
+function dashed_line_segment() {
+  printf '%*s' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+}
+
 function set_bash_prompt() {
   local prompt_header_elements
   declare -A element_colors
@@ -111,7 +115,7 @@ function set_bash_prompt() {
     fi
   done
 
-  PS1="\[\e[G\]
+  PS1="$(dashed_line_segment)\[\e[G\]
 ╭── ${prompt_header}${prompt_lines+\n$prompt_lines}
 │   $(pwd | colorize "fg-b-cyan")
 ╰─▶ ψ "
