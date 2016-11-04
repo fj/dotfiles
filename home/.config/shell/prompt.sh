@@ -11,6 +11,13 @@ source "$SHELL_SCRIPTS_HOME/logging.sh"
 function __prompt_reference() {
   local r
   case $1 in
+    cf_info)
+      if test -e "${HOME}/.cf/config.json" ; then
+        r="‹cf:$(jq --raw-output '.OrganizationFields.Name + "/" + .SpaceFields.Name' < ~/.cf/config.json)›"
+      else
+        unset r
+      fi
+      ;;
     rbenv_info)
       if test -z "$RUBY_ROOT" ; then
         unset r
@@ -77,11 +84,13 @@ function set_bash_prompt() {
   prompt_lines_elements=(
     rbenv_info
     virtualenv_info
+    cf_info
     git_info
   )
   element_colors[rbenv_info]='fg-red'
   element_colors[git_info]='fg-b-yellow'
   element_colors[virtualenv_info]='fg-blue'
+  element_colors[cf_info]="fg-blue"
   element_colors[date]='fg-b-white'
   element_colors[time]='fg-b-white'
   element_colors[userhost]='fg-green'
