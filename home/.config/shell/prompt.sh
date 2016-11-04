@@ -90,7 +90,7 @@ function set_bash_prompt() {
   element_colors[rbenv_info]='fg-red'
   element_colors[git_info]='fg-b-yellow'
   element_colors[virtualenv_info]='fg-blue'
-  element_colors[cf_info]="fg-blue"
+  element_colors[cf_info]="fg-yellow"
   element_colors[date]='fg-b-white'
   element_colors[time]='fg-b-white'
   element_colors[userhost]='fg-green'
