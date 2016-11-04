@@ -13,7 +13,13 @@ function __prompt_reference() {
   case $1 in
     cf_info)
       if test -e "${HOME}/.cf/config.json" ; then
-        r="‹cf:$(jq --raw-output '.OrganizationFields.Name + "/" + .SpaceFields.Name' < ~/.cf/config.json)›"
+        cf_info_output=$(jq --raw-output '.OrganizationFields.Name + "/" + .SpaceFields.Name' < ${HOME}/.cf/config.json)
+        if [ "$cf_info_output" = "/" ] ; then
+          # No org or space is set
+          unset r
+        else
+          r="‹cf:${cf_info_output}›"
+        fi
       else
         unset r
       fi
