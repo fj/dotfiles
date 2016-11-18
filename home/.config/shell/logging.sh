@@ -35,7 +35,7 @@ function log-success() {
 }
 
 function log-warning() {
-  log-message $(colorize 'fg-red' $1) $(colorize 'fg-red' '✖')
+  log-message "$(colorize 'fg-red' "$1")" $(colorize 'fg-red' '✖')
 }
 
 function log-caution() {
