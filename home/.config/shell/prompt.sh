@@ -13,12 +13,19 @@ function __prompt_reference() {
   case $1 in
     cf_info)
       if test -e "${HOME}/.cf/config.json" ; then
-        cf_info_output=$(jq --raw-output '.OrganizationFields.Name + "/" + .SpaceFields.Name' < ${HOME}/.cf/config.json)
-        if [ "$cf_info_output" = "/" ] ; then
-          # No org or space is set
+        cf_config_location=${HOME}/.cf/config.json
+        cf_api_target=$(jq --raw-output '
+          (if (.Target                  | length) > 0 then .Target                  else "-" end)
+          ' < ${cf_config_location})
+        cf_api_target=${cf_api_target#*//}
+        cf_info_output=$(jq --raw-output '
+          (if (.OrganizationFields.Name | length) > 0 then .OrganizationFields.Name else "-" end) + "/" +
+          (if (.SpaceFields.Name        | length) > 0 then .SpaceFields.Name        else "-" end)' < ${cf_config_location})
+        if [ "$cf_api_target" = "-" ] ; then
+          # No target is set
           unset r
         else
-          r="‹cf:${cf_info_output}›"
+          r="‹cf:${cf_api_target} :: ${cf_info_output}›"
         fi
       else
         unset r
