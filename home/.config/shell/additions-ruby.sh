@@ -1,3 +1,5 @@
+#! /usr/bin/bash
+
 # Add chruby.
 source /usr/local/share/chruby/chruby.sh
 
@@ -8,7 +10,11 @@ source /usr/local/share/gem_home/gem_home.sh
 alias be='bundle exec'
 
 function rb-go() {
-  chruby .
+  if [ -z "$1" ]; then
+    echo "-- no ruby specified; available rubies are:"
+    echo "   . (latest)"
+  fi
+  chruby $1
   gem_home .
 }
 
