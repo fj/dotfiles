@@ -1,3 +1,6 @@
+[include]
+  path = ~/.gitconfig.local
+
 [alias]
 	gl = log --format=format:\"%C(yellow bold)%h%Creset @ %C(blue)%cd%C(reset) » %C(white)%s%C(reset) (%C(green)%cN%C(reset)) %+d\" --topo-order --graph --date=iso
 	dc = diff --cached
@@ -24,3 +27,5 @@
 	newHighlight = green bold 22
 [diff]
 	compactionHeuristic = true
+[credential]
+	helper = cache
