@@ -12,19 +12,27 @@ function __prompt_reference() {
   local r
   case $1 in
     cf_info)
-      if test -e "${HOME}/.cf/config.json" ; then
-        cf_config_location=${HOME}/.cf/config.json
+      local cf_config_location
+      cf_config_location=${HOME}/.cf/config.json
+      if test -e "${cf_config_location}" ; then
+        cf_access_token=$(jq --raw-output '
+          (if (.AccessToken             | length) > 0 then .AccessToken             else "-" end)
+          ' < ${cf_config_location})
+
         cf_api_target=$(jq --raw-output '
           (if (.Target                  | length) > 0 then .Target                  else "-" end)
           ' < ${cf_config_location})
         cf_api_target=${cf_api_target#*//}
+
         cf_info_output=$(jq --raw-output '
           (if (.OrganizationFields.Name | length) > 0 then .OrganizationFields.Name else "-" end) + "/" +
-          (if (.SpaceFields.Name        | length) > 0 then .SpaceFields.Name        else "-" end)' < ${cf_config_location})
-        if [ "$cf_api_target" = "-" ] ; then
-          # No target is set
+          (if (.SpaceFields.Name        | length) > 0 then .SpaceFields.Name        else "-" end)
+          ' < ${cf_config_location})
+        if [ "$cf_access_token" = "-" ] ; then
+          # Not currently authenticated; don't show anything.
           unset r
         else
+          # We're authenticated. Show <cf: [api target] :: [org / space]>.
           r="‹cf:${cf_api_target} :: ${cf_info_output}›"
         fi
       else
