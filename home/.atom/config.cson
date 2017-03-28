@@ -1,0 +1,28 @@
+"*":
+  core:
+    telemetryConsent: "no"
+  editor:
+    fontFamily: "PragmataPro"
+    showInvisibles: true
+  "exception-reporting":
+    userId: "a65e4d36-1ef9-7a3c-f64d-04b60df78b6e"
+  jslint:
+    jslintVersion: "es6"
+    useFoldModeAsDefault: true
+    validateOnChange: true
+  "linter-eslint": {}
+  minimap:
+    plugins:
+      cursorline: true
+      cursorlineDecorationsZIndex: 0
+      "find-and-replace": true
+      "find-and-replaceDecorationsZIndex": 0
+      "git-diff": true
+      "git-diffDecorationsZIndex": 0
+  "trailing-spaces":
+    enableForCursorLines: true
+    enableForIndentation: true
+  "tree-view": {}
+  "vim-mode": {}
+  welcome:
+    showOnStartup: false
