@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+# get rid of xfce4-display-settings popups
+killall xfce4-display-settings
+
+# external 1920x1080 HDMI-1
+# laptop 1920x1080 eDP-1
+# want HDMI-1, then eDP-1 from left to right
+xrandr --output "eDP-1" --mode 1920x1080 --output "HDMI-1" --mode 1920x1080 --left-of "eDP-1"
