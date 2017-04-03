@@ -1,9 +1,5 @@
 set nocompatible
 
-" Pathogen
-call pathogen#infect()
-call pathogen#helptags()
-
 set statusline=%<\ %n:%f\ %m%r%y%=%20.(%l/%L\ @\ %c%V\ (%P)%)
 filetype plugin indent on
 
