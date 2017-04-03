@@ -1,0 +1,2 @@
+#! /usr/bin/env bash
+apm isntall --packages-file $HOME/.atom/backup-package-list.txt
