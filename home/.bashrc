@@ -123,8 +123,10 @@ done
 # Add ~/bin, ~/opt/bin to $PATH.
 export PATH="$HOME/bin:$HOME/opt/bin:$PATH"
 
-
 # Use iso timestamps in `ls` and other commands.
 export TIME_STYLE="long-iso"
 
 export TERM=xterm-256color
+
+# Enable FASD.
+eval "$(fasd --init auto)"
