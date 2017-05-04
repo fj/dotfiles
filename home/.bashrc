@@ -128,5 +128,8 @@ export TIME_STYLE="long-iso"
 
 export TERM=xterm-256color
 
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
 # Enable FASD.
 eval "$(fasd --init auto)"
