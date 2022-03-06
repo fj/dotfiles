@@ -27,6 +27,11 @@
 	newHighlight = green bold 22
 [diff]
 	compactionHeuristic = true
+	tool = codium
+[difftool]
+	prompt = false
+[difftool "codium"]
+	cmd = codium "--diff" "$LOCAL" "$REMOTE" "--wait"
 [credential]
 	helper = cache
 [init]
