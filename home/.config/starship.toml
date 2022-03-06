@@ -1,0 +1,41 @@
+# ~/.config/starship.toml
+
+# Directory line, all line, optional status line, character line.
+format="""[╭─](bold white)\\[$directory\\]$time
+[│](bold white) $all([│](bold white) $status\n)[╰─](bold white)$character"""
+right_format="""$cmd_duration$time"""
+
+[directory]
+truncation_length=10
+truncation_symbol=".../"
+format="[$path]($style)[$read_only]($read_only_style)"
+
+[git_status]
+format="([$all_status]($style))([$ahead_behind]($style blue))"
+
+# Show ahead/behind counts.
+diverged = "⇕ ⇡${ahead_count} ⇣${behind_count}"
+
+# Show other counts.
+ahead = "⇡⟨${count}⟩"
+behind = "⇣⟨${count}⟩"
+conflicted = "⇄⟨${count}⟩"
+deleted = "×⟨${count}⟩"
+modified = "!⟨${count}⟩"
+renamed = "»⟨${count}⟩"
+staged = "+⟨${count}⟩"
+stashed = "■⟨${count}⟩"
+up_to_date = "✓"
+untracked = "?⟨${count}⟩"
+
+[status]
+# Enable status values for commands.
+disabled=false
+format="[$status $symbol]($style)"
+success_symbol=""
+
+[time]
+disabled=false
+style="bold white"
+format=" [$time]($style)"
+time_format="%F @ %X"
