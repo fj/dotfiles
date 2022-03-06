@@ -8,7 +8,7 @@
 	email = jxf@jxf.me
 	name = John Feminella
 [core]
-	editor = vim
+	editor = codium --wait
   excludesfile = /home/jxf/.gitignore-global
 [pager]
 	log = diff-highlight | less
@@ -29,3 +29,5 @@
 	compactionHeuristic = true
 [credential]
 	helper = cache
+[init]
+	defaultBranch = main
