@@ -10,6 +10,7 @@
 [core]
 	editor = codium --wait
   excludesfile = /home/jxf/.gitignore-global
+	filemode = false
 [pager]
 	log = diff-highlight | less
 	show = diff-highlight | less
