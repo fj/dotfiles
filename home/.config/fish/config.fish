@@ -1,7 +1,7 @@
 #! /usr/bin/fish
 
 source "$HOME/.homesick/repos/homeshick/homeshick.fish"
-source (/snap/starship/1766/bin/starship init fish --print-full-init | psub)
+starship init fish | source
 
 contains "$HOME/.cargo/bin" $fish_user_paths; or set -Ua fish_user_paths "$HOME/.cargo/bin" $fish_user_paths
 contains "$HOME/.local/bin" $fish_user_paths; or set -Ua fish_user_paths "$HOME/.local/bin" $fish_user_paths
