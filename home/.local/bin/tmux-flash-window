@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Flash the tmux window identified by $TMUX_PANE, so something finishing
+# in a background window is noticeable even when another window is focused.
+# (Currently invoked from the Claude Code "Stop" hook in
+# ~/.claude/settings.json, but there's nothing Claude-specific about it.)
+#
+# The target window is resolved from $TMUX_PANE (inherited from the pane
+# the caller runs in) rather than the currently-active window. Both the
+# focused and unfocused status styles are set so the flash shows
+# regardless of which window you're looking at, then unset to restore
+# the global defaults.
+
+win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || exit 0
+[ -n "$win" ] || exit 0
+
+for _ in $(seq 4); do
+  for colour in colour196 colour208 colour226; do
+    tmux set -w -t "$win" window-status-style "bg=$colour"
+    tmux set -w -t "$win" window-status-current-style "bg=$colour"
+    sleep 0.055
+  done
+done
+
+tmux set -uw -t "$win" window-status-style
+tmux set -uw -t "$win" window-status-current-style
