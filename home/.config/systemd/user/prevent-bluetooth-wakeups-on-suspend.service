@@ -1,0 +1,20 @@
+[Unit]
+Description=disable Bluetooth for systemd sleep/suspend targets
+Before=sleep.target
+Before=suspend.target
+Before=hybrid-sleep.target
+Before=suspend-then-hibernate.target
+StopWhenUnneeded=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart="/usr/sbin/rfkill block bluetooth"
+ExecStop="/usr/sbin/rfkill unblock bluetooth"
+
+[Install]
+WantedBy=sleep.target
+WantedBy=suspend.target
+WantedBy=hybrid-sleep.target
+WantedBy=suspend-then-hibernate.target
