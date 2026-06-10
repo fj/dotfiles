@@ -1,3 +1,5 @@
 .gem
 .bundle
 .gitconfig.local
+
+**/.claude/settings.local.json
