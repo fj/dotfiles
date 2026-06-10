@@ -133,3 +133,4 @@ export NVM_DIR="$HOME/.nvm"
 
 # Enable FASD.
 eval "$(fasd --init auto)"
+. "$HOME/.cargo/env"
