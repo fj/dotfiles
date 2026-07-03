@@ -1,0 +1,30 @@
+#!/bin/sh
+# md-unwrap: join hard-wrapped Markdown paragraphs onto single lines.
+#
+# Thin wrapper around mdformat with the front-matter plugin, installed
+# persistently on first use via `uv tool install`. Front matter, code
+# blocks, lists, and tables keep their structure; note that mdformat is
+# a full formatter, so it also normalizes styling (bullet and emphasis
+# markers, HTML entities).
+#
+# Usage:
+#   md-unwrap FILE...        rewrite files in place
+#   md-unwrap - < in.md      filter stdin to stdout
+#   md-unwrap --check FILE   exit nonzero if a file would change
+set -eu
+
+if ! command -v uv >/dev/null 2>&1; then
+    echo "md-unwrap: uv is required but not installed (https://docs.astral.sh/uv/)" >&2
+    exit 1
+fi
+
+mdformat="$(uv tool dir)/mdformat/bin/mdformat"
+
+# Bootstrap: install (or repair an install missing the front-matter
+# plugin, which would otherwise mangle Hugo front matter).
+if [ ! -x "$mdformat" ] || ! "$mdformat" --version 2>/dev/null | grep -q mdformat_frontmatter; then
+    echo "md-unwrap: installing mdformat via uv..." >&2
+    uv tool install --quiet --force --with mdformat-frontmatter mdformat >&2
+fi
+
+exec "$mdformat" --wrap=no "$@"
