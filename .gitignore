@@ -1,0 +1,3 @@
+# The global excludes file ignores **/.claude everywhere; re-include it here
+# since this repo is where its canonical copies live.
+!home/.claude/
