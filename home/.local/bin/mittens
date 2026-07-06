@@ -58,6 +58,15 @@
 #     on the tmpfs and vanish on exit. If a tool needs a new persistent
 #     ~/.something, create it in the real home first; it will be bound in
 #     on the next launch.
+#   - Only the current uid is mapped in the sandbox's user namespace, so
+#     files owned by anyone else (root included) appear as nobody:nogroup
+#     inside it. OpenSSH's config ownership check rejects the root-owned
+#     drop-ins in /etc/ssh/ssh_config.d on that basis ("Bad owner or
+#     permissions") and aborts every ssh invocation. mittens sets
+#     GIT_SSH_COMMAND to "ssh -F ~/.ssh/config" (or -F /dev/null if you
+#     have no user config; skipped entirely if GIT_SSH_COMMAND is already
+#     set) so git's ssh transport never reads the system-wide config.
+#     Other ssh use inside the sandbox stays broken; pass -F yourself.
 #   - Claude Code's own bwrap-based sandboxing (disabled by default)
 #     cannot start nested inside mittens under Debian's stock AppArmor
 #     policy: the stacked bwrap//&unpriv_bwrap profile denies creating a
@@ -253,6 +262,19 @@ for entry in "$HOME"/*; do
   args+=(--dev-bind "$entry" "$entry")
 done
 args+=(--bind "$state/dot-claude" "$HOME/.claude")
+
+# Root-owned files appear as nobody:nogroup inside the user namespace (only
+# the current uid is mapped), which trips OpenSSH's config ownership check on
+# the /etc/ssh/ssh_config.d drop-ins and aborts every ssh run ("Bad owner or
+# permissions on …"). Point git's ssh transport at the user config alone (-F
+# skips the system-wide config; /dev/null if there is no user config) so git
+# keeps working. Deliberately narrow: a preexisting GIT_SSH_COMMAND wins, and
+# non-git ssh is left alone rather than papered over sandbox-wide.
+if [ -z "${GIT_SSH_COMMAND:-}" ]; then
+  ssh_cfg="$HOME/.ssh/config"
+  [ -f "$ssh_cfg" ] || ssh_cfg=/dev/null
+  args+=(--setenv GIT_SSH_COMMAND "ssh -F ${ssh_cfg@Q}")
+fi
 
 # Wire the shared, tool-agnostic agent config (XDG ~/.config/agents) into what
 # Claude sees as ~/.claude, so authored config — subagents, commands, skills,
