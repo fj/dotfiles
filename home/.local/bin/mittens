@@ -49,6 +49,18 @@
 # exit wins for claude.json (the dot-claude directory is a shared bind
 # mount and is not affected).
 #
+# An escape hatch, `mittens --unsafe`, skips bubblewrap entirely and just
+# execs claude with CLAUDE_CONFIG_DIR pointing at dot-claude. Claude Code
+# documents that variable as relocating every ~/.claude path, and it also
+# moves the top-level config to $CLAUDE_CONFIG_DIR/.claude.json — a
+# different location than the claude.json wrapped runs use, so the unsafe
+# copy is seeded from claude.json once and evolves independently after
+# that. The bind-mount wiring of the shared agent config is also absent in
+# unsafe mode, so subagents/commands/skills/hooks/CLAUDE.md from
+# ~/.config/agents do not appear. Unlike the namespace, this depends
+# entirely on Claude Code (and everything it spawns) honoring the
+# environment variable — hence the name.
+#
 # Caveats:
 #   - Plain `claude` runs outside mittens will recreate ~/.claude in the
 #     real home; mittens refuses to start while any ~/.claude or
@@ -95,6 +107,15 @@ Usage:
   mittens --migrate               move existing ~/.claude and ~/.claude.json
                                   into the state directory (run this once,
                                   with no Claude Code sessions running)
+  mittens --unsafe [claude arguments...]
+                                  skip the sandbox: exec claude directly with
+                                  CLAUDE_CONFIG_DIR=<state dir>/dot-claude.
+                                  Relies on Claude Code honoring that variable
+                                  instead of a kernel-level redirect. The shared
+                                  agent config is not wired in, and claude's
+                                  top-level config lives at dot-claude/
+                                  .claude.json (seeded once from claude.json,
+                                  independent of wrapped runs after that).
   mittens --dangerously-skip-pawmissions [claude arguments...]
                                   inspect any ~/.claude / ~/.claude.json* in
                                   the real home, count down, then DELETE them
@@ -104,8 +125,8 @@ Usage:
                                   is disposable leftover.
   mittens --help | -h             show this help
 
-Only --migrate, --dangerously-skip-pawmissions, --help, and -h are
-intercepted, and only as the first argument; everything else is passed
+Only --migrate, --unsafe, --dangerously-skip-pawmissions, --help, and -h
+are intercepted, and only as the first argument; everything else is passed
 through to claude unchanged (so "mittens config get theme" etc. work as
 expected; for claude's own help, run "mittens help").
 
@@ -215,13 +236,15 @@ skip_pawmissions() {
 }
 
 skip=""
+unsafe=""
 case "${1:-}" in
   -h|--help) usage; exit 0 ;;
   --migrate) migrate; exit 0 ;;
   --dangerously-skip-pawmissions) skip=1; shift ;;
+  --unsafe) unsafe=1; shift ;;
 esac
 
-command -v bwrap >/dev/null || { echo "mittens: bwrap (bubblewrap) is not installed" >&2; exit 1; }
+[ -n "$unsafe" ] || command -v bwrap >/dev/null || { echo "mittens: bwrap (bubblewrap) is not installed" >&2; exit 1; }
 [ -x "$claude_bin" ] || { echo "mittens: claude binary not found at $claude_bin" >&2; exit 1; }
 
 # Optionally wipe the real-home Claude data before the guard runs, so that the
@@ -248,6 +271,19 @@ if [ "${#stray[@]}" -gt 0 ]; then
   exit 1
 fi
 mkdir -p "$state/dot-claude"
+
+# --unsafe: no namespace, just point CLAUDE_CONFIG_DIR at dot-claude and exec.
+# That variable relocates every ~/.claude path — including the top-level
+# config, which claude then keeps at dot-claude/.claude.json rather than at
+# $state/claude.json where wrapped runs sync it. Seed it from the wrapped copy
+# once; the two evolve independently afterwards.
+if [ -n "$unsafe" ]; then
+  if [ ! -e "$state/dot-claude/.claude.json" ] && [ -f "$state/claude.json" ]; then
+    cp -p -- "$state/claude.json" "$state/dot-claude/.claude.json"
+  fi
+  exec env CLAUDE_CONFIG_DIR="$state/dot-claude" "$claude_bin" "$@"
+fi
+
 [ -f "$state/claude.json" ] || echo '{}' >"$state/claude.json"
 
 # Build the namespace: tmpfs over $HOME, every real top-level entry bound
