@@ -1,0 +1,297 @@
+#!/usr/bin/env bash
+#
+# mittens — run Claude Code with clean paws.
+#
+# Claude Code hardcodes ~/.claude and ~/.claude.json and does not respect
+# the XDG Base Directory spec (anthropics/claude-code#1455). mittens runs
+# it inside a private mount namespace (via bubblewrap) where those paths
+# are redirected to an XDG-compliant state directory, so the real home
+# directory stays free of Claude cruft.
+#
+# How it works: inside the namespace, $HOME is replaced with a throwaway
+# tmpfs, every real top-level entry of the home directory is bind-mounted
+# back into place, and the state directory is mounted at ~/.claude. The
+# ~/.claude mount point is created on the tmpfs, never on disk. Because
+# the redirect happens at the kernel VFS layer, it applies to Claude Code
+# and every subprocess it spawns (bash tool, MCP servers, hooks) — even
+# for hardcoded path references — and does not depend on Claude Code
+# honoring any environment variable, now or in future versions.
+#
+# State directory layout (default: ~/.local/state/claude-home; the name
+# deliberately avoids ~/.local/state/claude, which Claude Code's native
+# launcher already uses for its own lock files):
+#
+#   dot-claude/    what Claude Code sees as ~/.claude
+#   claude.json    what Claude Code sees as ~/.claude.json
+#
+# On top of that, a shared, tool-agnostic agent config (default:
+# ~/.config/agents, following the XDG config spec and the AGENTS.md
+# convention) is bind-mounted into the ~/.claude view so it is not
+# duplicated in the per-tool state dir:
+#
+#   ~/.config/agents/agents        -> ~/.claude/agents
+#   ~/.config/agents/commands      -> ~/.claude/commands
+#   ~/.config/agents/skills        -> ~/.claude/skills
+#   ~/.config/agents/hooks         -> ~/.claude/hooks
+#   ~/.config/agents/output-styles -> ~/.claude/output-styles
+#   ~/.config/agents/AGENTS.md     -> ~/.claude/CLAUDE.md   (read-only)
+#
+# Each is mounted only if its source exists, so mittens still runs without
+# the shared config present, and a mountpoint that does not exist yet starts
+# working the moment you create it under the shared config. Machine-specific
+# state (settings.json, plugins, projects, sessions, credentials) stays in
+# the per-tool state dir and is never shared.
+#
+# ~/.claude.json is copied into the tmpfs at launch and synced back out on
+# exit, rather than bind-mounted, because Claude Code appears to rewrite
+# it via atomic rename — which would silently detach a file bind-mount.
+# Consequence: when several mittens sessions run at once, the last one to
+# exit wins for claude.json (the dot-claude directory is a shared bind
+# mount and is not affected).
+#
+# Caveats:
+#   - Plain `claude` runs outside mittens will recreate ~/.claude in the
+#     real home; mittens refuses to start while any ~/.claude or
+#     ~/.claude.json* exists, to prevent silent divergence between the two.
+#     Consider aliasing claude to mittens in your shell.
+#   - New top-level entries created under $HOME inside the namespace land
+#     on the tmpfs and vanish on exit. If a tool needs a new persistent
+#     ~/.something, create it in the real home first; it will be bound in
+#     on the next launch.
+#   - Claude Code's own bwrap-based sandboxing (disabled by default)
+#     cannot start nested inside mittens under Debian's stock AppArmor
+#     policy: the stacked bwrap//&unpriv_bwrap profile denies creating a
+#     nested mount namespace. Fixable with a custom AppArmor profile for
+#     a private copy of bwrap; ask your favorite LLM about it.
+#
+# Environment:
+#   MITTENS_STATE_DIR    override the state directory
+#   MITTENS_CLAUDE_BIN   override the claude executable
+#                        (default: ~/.local/bin/claude)
+#   MITTENS_AGENTS_DIR   override the shared agent config directory
+#                        (default: ${XDG_CONFIG_HOME:-~/.config}/agents)
+
+set -euo pipefail
+
+state="${MITTENS_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/claude-home}"
+claude_bin="${MITTENS_CLAUDE_BIN:-$HOME/.local/bin/claude}"
+agents_cfg="${MITTENS_AGENTS_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/agents}"
+
+usage() {
+  cat <<EOF
+mittens — run Claude Code with ~/.claude redirected to an XDG location
+
+Usage:
+  mittens [claude arguments...]   run Claude Code inside the namespace
+  mittens --migrate               move existing ~/.claude and ~/.claude.json
+                                  into the state directory (run this once,
+                                  with no Claude Code sessions running)
+  mittens --dangerously-skip-pawmissions [claude arguments...]
+                                  inspect any ~/.claude / ~/.claude.json* in
+                                  the real home, count down, then DELETE them
+                                  (rm -rf) to clear the startup guard, and
+                                  launch claude anyway. Destroys data. Only
+                                  use when you are certain the real-home copy
+                                  is disposable leftover.
+  mittens --help | -h             show this help
+
+Only --migrate, --dangerously-skip-pawmissions, --help, and -h are
+intercepted, and only as the first argument; everything else is passed
+through to claude unchanged (so "mittens config get theme" etc. work as
+expected; for claude's own help, run "mittens help").
+
+State directory:     $state
+Claude binary:       $claude_bin
+Shared agent config: $agents_cfg
+(Override with MITTENS_STATE_DIR / MITTENS_CLAUDE_BIN / MITTENS_AGENTS_DIR.)
+EOF
+}
+
+migrate() {
+  if pgrep -x claude >/dev/null 2>&1; then
+    echo "mittens: claude processes are running; close all Claude Code sessions before migrating" >&2
+    exit 1
+  fi
+  mkdir -p "$state"
+  if [ -d "$HOME/.claude" ]; then
+    if [ -e "$state/dot-claude" ]; then
+      if [ -n "$(ls -A "$state/dot-claude" 2>/dev/null)" ]; then
+        echo "mittens: refusing to migrate: $state/dot-claude already contains data" >&2
+        exit 1
+      fi
+      rmdir "$state/dot-claude"
+    fi
+    mv "$HOME/.claude" "$state/dot-claude"
+    echo "moved ~/.claude -> $state/dot-claude"
+  fi
+  if [ -f "$HOME/.claude.json" ]; then
+    mv "$HOME/.claude.json" "$state/claude.json"
+    echo "moved ~/.claude.json -> $state/claude.json"
+  fi
+  shopt -s nullglob
+  for backup in "$HOME"/.claude.json.*; do
+    mv "$backup" "$state/"
+    echo "moved $backup -> $state/"
+  done
+  echo "migration complete; run mittens normally from now on"
+}
+
+# Draw a string of COUNT copies of CHAR (used by the countdown bar).
+_bar() {
+  local n=$1 c=$2 s=''
+  while (( n-- > 0 )); do s+=$c; done
+  printf '%s' "$s"
+}
+
+# --dangerously-skip-pawmissions: verbosely inspect the real-home Claude data
+# that the startup guard trips on, count down for 10s (abortable with Ctrl-C),
+# then rm -rf it so the guard passes and claude can launch. Purely destructive;
+# the caller sleeps 3s afterwards before actually starting claude.
+skip_pawmissions() {
+  shopt -s dotglob nullglob
+  local targets=() t
+  [ -e "$HOME/.claude" ] && targets+=("$HOME/.claude")
+  for t in "$HOME"/.claude.json*; do targets+=("$t"); done
+
+  echo "mittens: --dangerously-skip-pawmissions" >&2
+  if [ "${#targets[@]}" -eq 0 ]; then
+    echo "mittens: no ~/.claude or ~/.claude.json* in the real home; nothing to wipe" >&2
+    return 0
+  fi
+
+  echo "mittens: inspecting real-home Claude data slated for deletion:" >&2
+  for t in "${targets[@]}"; do
+    if [ -d "$t" ]; then
+      local n sz
+      n=$(find "$t" -mindepth 1 2>/dev/null | wc -l | tr -d ' ')
+      sz=$(du -sh "$t" 2>/dev/null | cut -f1)
+      printf '  %s  (dir, %s, %s entries)\n' "$t" "${sz:-?}" "${n:-?}" >&2
+      ls -A1 "$t" 2>/dev/null | sed 's/^/        /' >&2
+    else
+      local sz
+      sz=$(du -h "$t" 2>/dev/null | cut -f1)
+      printf '  %s  (file, %s)\n' "$t" "${sz:-?}" >&2
+    fi
+  done
+
+  # Indicate any running Claude processes. Wrapped sessions read the state dir,
+  # not the real home, but an unwrapped run may be writing to the very files
+  # about to be deleted. Informational only — this is the dangerous path.
+  local pids
+  pids=$(pgrep -x claude 2>/dev/null || true)
+  if [ -n "$pids" ]; then
+    echo >&2
+    echo "mittens: WARNING — Claude appears to be running (${pids//$'\n'/, }):" >&2
+    ps -o pid=,etime=,args= -p $pids 2>/dev/null | sed 's/^/  /' >&2
+    echo "mittens: if any of these is an UNWRAPPED run, it may be writing to the" >&2
+    echo "mittens: files below right now. Ctrl-C during the countdown to abort." >&2
+  fi
+
+  echo >&2
+  echo "mittens: the above will be PERMANENTLY DELETED (rm -rf). Ctrl-C to abort." >&2
+  local width=40 total=10 i filled
+  for (( i = 0; i < total; i++ )); do
+    filled=$(( (i * width) / total ))
+    printf '\r  \033[1;31m[%s%s]\033[0m  deleting in %2ds ' \
+      "$(_bar "$filled" '#')" "$(_bar "$(( width - filled ))" '.')" \
+      "$(( total - i ))" >&2
+    sleep 1
+  done
+  printf '\r  \033[1;31m[%s]\033[0m  deleting now      \n' "$(_bar "$width" '#')" >&2
+
+  for t in "${targets[@]}"; do
+    rm -rf -- "$t"
+    echo "mittens: wiped $t" >&2
+  done
+}
+
+skip=""
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  --migrate) migrate; exit 0 ;;
+  --dangerously-skip-pawmissions) skip=1; shift ;;
+esac
+
+command -v bwrap >/dev/null || { echo "mittens: bwrap (bubblewrap) is not installed" >&2; exit 1; }
+[ -x "$claude_bin" ] || { echo "mittens: claude binary not found at $claude_bin" >&2; exit 1; }
+
+# Optionally wipe the real-home Claude data before the guard runs, so that the
+# guard below finds nothing and lets claude start.
+[ -n "$skip" ] && skip_pawmissions
+
+# Hard guard: refuse to run while any Claude data exists in the real home.
+# It would be shadowed and ignored inside the namespace, so anything in it
+# (fresh credentials, config edits from an unwrapped run) would silently
+# diverge from the state directory that wrapped sessions actually use.
+shopt -s nullglob
+stray=()
+[ -e "$HOME/.claude" ] && stray+=("~/.claude")
+for f in "$HOME"/.claude.json*; do stray+=("~/${f#"$HOME"/}"); done
+if [ "${#stray[@]}" -gt 0 ]; then
+  echo "mittens: refusing to start: found ${stray[*]} in the real home" >&2
+  if [ -d "$state/dot-claude" ] && [ -n "$(ls -A "$state/dot-claude" 2>/dev/null)" ]; then
+    echo "mittens: the state directory ($state) is already populated, so this is" >&2
+    echo "mittens: probably leftover from an unwrapped claude run; inspect it and either" >&2
+    echo "mittens: delete it or reconcile it with the state directory by hand" >&2
+  else
+    echo "mittens: close all Claude Code sessions and run: mittens --migrate" >&2
+  fi
+  exit 1
+fi
+mkdir -p "$state/dot-claude"
+[ -f "$state/claude.json" ] || echo '{}' >"$state/claude.json"
+
+# Build the namespace: tmpfs over $HOME, every real top-level entry bound
+# back, state dir mounted at ~/.claude. Sources are resolved on the host
+# side, so they remain visible after the tmpfs covers $HOME.
+args=(--dev-bind / / --tmpfs "$HOME")
+shopt -s dotglob nullglob
+for entry in "$HOME"/*; do
+  case "$(basename "$entry")" in
+    .claude|.claude.json*) continue ;;
+  esac
+  args+=(--dev-bind "$entry" "$entry")
+done
+args+=(--bind "$state/dot-claude" "$HOME/.claude")
+
+# Wire the shared, tool-agnostic agent config (XDG ~/.config/agents) into what
+# Claude sees as ~/.claude, so authored config — subagents, commands, skills,
+# hooks, output styles, and top-level memory — comes from one place shared
+# across agent tools rather than from the per-tool state dir. Bind-mounted (not
+# symlinked into dot-claude) so the wiring is explicit here and survives a wiped
+# state dir: delete ~/.claude, run mittens, and these are reconstructed.
+# Sources resolve host-side; mountpoints are ensured on the dot-claude bind so
+# bwrap has somewhere to mount. Each is optional and mounted only if its source
+# exists, so a name that does not exist yet costs nothing and starts working
+# the moment you create it under the shared config. Machine-specific state
+# (settings.json, plugins, projects, sessions, credentials, caches, …) is
+# deliberately NOT shared and stays in dot-claude.
+for d in agents commands skills hooks output-styles; do
+  [ -d "$agents_cfg/$d" ] || continue
+  mkdir -p "$state/dot-claude/$d"
+  args+=(--bind "$agents_cfg/$d" "$HOME/.claude/$d")
+done
+if [ -f "$agents_cfg/AGENTS.md" ]; then
+  # CLAUDE.md is just AGENTS.md (the source of truth) under Claude's name, so
+  # mount it read-only: memory edits go to AGENTS.md directly, never diverge.
+  [ -e "$state/dot-claude/CLAUDE.md" ] || : >"$state/dot-claude/CLAUDE.md"
+  args+=(--ro-bind "$agents_cfg/AGENTS.md" "$HOME/.claude/CLAUDE.md")
+fi
+
+# After a --dangerously-skip-pawmissions wipe, pause briefly before launching.
+[ -n "$skip" ] && { echo "mittens: starting claude in 3s…" >&2; sleep 3; }
+
+# The inner shell copies claude.json onto the tmpfs (rename-safe, unlike a
+# file bind-mount) and syncs it back out when claude exits, however it exits.
+exec bwrap "${args[@]}" -- bash -c '
+  state=$1; claude_bin=$2; shift 2
+  cp -p -- "$state/claude.json" "$HOME/.claude.json"
+  sync_out() {
+    cp -p -- "$HOME/.claude.json" "$state/claude.json" 2>/dev/null || true
+    cp -p -- "$HOME"/.claude.json.* "$state/" 2>/dev/null || true
+  }
+  trap sync_out EXIT
+  "$claude_bin" "$@"
+  rc=$?
+  exit "$rc"
+' mittens-inner "$state" "$claude_bin" "$@"
