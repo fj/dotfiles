@@ -1,0 +1,175 @@
+{
+  "theme": "tokyo-night",
+  "display": {
+    "style": "tui",
+    "charset": "unicode",
+    "colorCompatibility": "auto",
+    "autoWrap": true,
+    "padding": 1,
+    "lines": [
+      {
+        "segments": {
+          "directory": {
+            "enabled": true,
+            "style": "fish"
+          },
+          "git": {
+            "enabled": true,
+            "showAheadBehind": true
+          },
+          "model": {
+            "enabled": true
+          },
+          "context": {
+            "enabled": true,
+            "autocompactBuffer": 0
+          },
+          "block": {
+            "enabled": true,
+            "type": "tokens"
+          },
+          "session": {
+            "enabled": true,
+            "type": "tokens"
+          },
+          "today": {
+            "enabled": true,
+            "type": "cost"
+          },
+          "weekly": {
+            "enabled": true
+          },
+          "metrics": {
+            "enabled": true,
+            "showLastResponseTime": true,
+            "showResponseTime": false,
+            "showDuration": true,
+            "showMessageCount": true
+          },
+          "version": {
+            "enabled": false
+          },
+          "tmux": {
+            "enabled": false
+          },
+          "sessionId": {
+            "enabled": false,
+            "showIdLabel": true
+          },
+          "env": {
+            "enabled": false,
+            "variable": ""
+          },
+          "agent": {
+            "enabled": false,
+            "showLabel": false
+          },
+          "thinking": {
+            "enabled": false,
+            "showEnabled": true,
+            "showEffort": true
+          },
+          "cacheTimer": {
+            "enabled": false,
+            "displayMode": "elapsed"
+          }
+        }
+      }
+    ],
+    "showIcons": true,
+    "tui": {
+      "fitContent": true,
+      "minWidth": 60,
+      "padding": {
+        "horizontal": 1
+      },
+      "separator": {
+        "column": ""
+      },
+      "title": {
+        "left": "{model.icon}  {model.value}",
+        "right": "{dir}"
+      },
+      "footer": {
+        "left": "{activity.durationIcon} {activity.durationVal}  {activity.messagesIcon} {activity.messagesVal}",
+        "right": "{metrics.lastResponse}"
+      },
+      "segments": {
+        "git.headVal": {
+          "items": [
+            "{branch}",
+            "{status}",
+            "{ahead}",
+            "{behind}"
+          ],
+          "gap": 1
+        }
+      },
+      "breakpoints": [
+        {
+          "minWidth": 55,
+          "areas": [
+            "git.icon     git.headVal     git.headVal     git.headVal        git.working",
+            "---",
+            "context.icon  context.bar  context.bar  context.pct     context.tokens",
+            "block.icon    block.bar    block.bar    block.value     block.time",
+            "weekly.icon   weekly.bar   weekly.bar   weekly.pct      weekly.time",
+            "---",
+            "session       session       session     today           today"
+          ],
+          "columns": [
+            "auto",
+            "1fr",
+            "auto",
+            "auto",
+            "auto"
+          ],
+          "align": [
+            "left",
+            "left",
+            "right",
+            "right",
+            "right"
+          ]
+        },
+        {
+          "minWidth": 0,
+          "areas": [
+            "git.head",
+            "git.working",
+            "---",
+            "context",
+            "block",
+            "---",
+            "session",
+            "today"
+          ],
+          "columns": [
+            "1fr"
+          ],
+          "align": [
+            "left"
+          ]
+        }
+      ]
+    }
+  },
+  "budget": {
+    "session": {
+      "warningThreshold": 80
+    },
+    "today": {
+      "warningThreshold": 80,
+      "amount": 50
+    },
+    "block": {
+      "warningThreshold": 80,
+      "amount": 15
+    }
+  },
+  "modelContextLimits": {
+    "default": 200000,
+    "sonnet": 200000,
+    "opus": 200000
+  }
+}
