@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook: block Claude from finishing if implementation changes exist but
-# the post-work review hasn't run. The reviewers (or Claude, after running
-# them) touch the marker file to clear the gate.
+# the post-work review hasn't run. The reviewers themselves never write, so
+# Claude touches the marker file once the review is resolved.
 set -u
 
 marker=".claude/.review-done"
@@ -25,8 +25,9 @@ fi
 
 cat >&2 <<'MSG'
 Implementation changes detected but the post-work review has not run.
-Launch the modularity-reviewer, atomicity-reviewer, and test-quality-reviewer
-subagents in parallel on the diff, address high-severity findings, then
-`touch .claude/.review-done` and finish.
+Run it as the Post-work review section of your global instructions describes:
+review the diff, then resolve what it finds — high-severity findings fixed and
+re-verified, medium and low fixed or explicitly deferred with a reason, nothing
+left silently outstanding. Then `touch .claude/.review-done` and finish.
 MSG
 exit 2
