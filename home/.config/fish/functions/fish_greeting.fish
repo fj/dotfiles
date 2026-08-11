@@ -19,9 +19,9 @@ function fish_greeting --description 'Rainbow band / text / rainbow band greetin
     set -l palette_n 30  # colors per rainbow cycle
     set -l delay 0.025   # seconds between frames
 
-    set -l cols $COLUMNS
+    set -l cols (tput cols 2>/dev/null)
+    test -n "$cols"; or set cols $COLUMNS
     test -n "$cols"; or set cols 80
-    test "$cols" -gt 160; and set cols 160   # cap work on very wide terminals
 
     # Text lives between the bands; the diagonal flows past it.
     set -l user (whoami)
