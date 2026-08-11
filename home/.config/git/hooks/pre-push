@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# Global pre-push hook: refuse to push scratch agent/* branches to a remote.
+#
+# agent/* branches are local, throwaway workspaces created by the
+# /jxf:coding:execute fan-out. Work that needs to reach a remote belongs on a
+# topic/* branch. This hook is a hard backstop for that rule.
+#
+# Installed globally via:
+#   git config --global core.hooksPath <path to this directory>
+# and kept in source control so it can't silently drift.
+#
+# git passes "<remote-name> <remote-url>" as arguments and one line per ref
+# being pushed on stdin:
+#   <local ref> SP <local sha> SP <remote ref> SP <remote sha> LF
+# For a deletion, <local ref> is "(delete)" and <local sha> is all zeros.
+
+blocked=0
+
+while read -r local_ref local_sha remote_ref remote_sha || [ -n "$local_ref" ]; do
+	# Allow deletions (all-zero local sha) so an accidentally pushed
+	# agent/* branch can still be cleaned up from the remote.
+	case "$local_sha" in
+		*[!0]*) : ;;   # has a non-zero digit -> a real update, keep checking
+		*) continue ;; # all zeros -> deletion, allow
+	esac
+
+	is_agent=0
+	case "$local_ref" in refs/heads/agent/*) is_agent=1 ;; esac
+	case "$remote_ref" in refs/heads/agent/*) is_agent=1 ;; esac
+	if [ "$is_agent" -ne 0 ]; then
+		blocked=1
+		printf '  %s -> %s\n' "$local_ref" "$remote_ref" >&2
+	fi
+done
+
+if [ "$blocked" -ne 0 ]; then
+	cat >&2 <<'EOF'
+
+pre-push: refusing to push agent/* branch(es) to a remote.
+
+agent/* branches are local, throwaway scratch (created by the
+/jxf:coding:execute fan-out) and must never leave this machine.
+
+Put the work on a topic/* branch and push that instead, e.g.:
+
+  git switch -c topic/<slug> agent/<name>
+  git push -u origin topic/<slug>
+
+Or run /jxf:coding:organize to organize agent/* work into topic/* branches.
+EOF
+	exit 1
+fi
+
+exit 0

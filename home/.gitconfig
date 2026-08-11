@@ -37,3 +37,5 @@
 	helper = cache
 [init]
 	defaultBranch = main
+[core]
+	hooksPath = /home/jxf/.config/git/hooks
