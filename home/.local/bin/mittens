@@ -2,23 +2,29 @@
 #
 # mittens — run coding agents with clean paws.
 #
-# The implementation moved from this script to a Rust CLI:
+# The implementation lives in a Rust CLI:
 #
-#   https://github.com/fj/mittens        (~/src/projects/jxf/mittens)
+#   https://github.com/fj/mittens
 #
-# This shim just execs the locally built binary so the command stays managed
-# by the dotfiles. Run `mittens --help` for usage (services: claude,
-# opencode).
+# This shim execs the cargo-installed binary so the command stays managed by
+# the dotfiles, installing it via `cargo install` first if it is missing (no
+# local checkout needed; `mittens self-update` updates it in place later).
+# Run `mittens --help` for usage (harnesses: claude, opencode; select one
+# with `mittens harness:<name>`).
 
 set -euo pipefail
 
-bin="$HOME/src/projects/jxf/mittens/target/release/mittens"
+repo_url="https://github.com/fj/mittens"
+root="${CARGO_INSTALL_ROOT:-${CARGO_HOME:-$HOME/.cargo}}"
+bin="$root/bin/mittens"
 
 if [ ! -x "$bin" ]; then
-  echo "mittens: binary not built at $bin" >&2
-  echo "mittens: clone https://github.com/fj/mittens to ~/src/projects/jxf/mittens" >&2
-  echo "mittens: and run: cargo build --release --manifest-path ~/src/projects/jxf/mittens/Cargo.toml" >&2
-  exit 1
+  echo "mittens: not installed at $bin; installing from $repo_url" >&2
+  if ! command -v cargo >/dev/null; then
+    echo "mittens: cannot install: cargo is not installed" >&2
+    exit 1
+  fi
+  cargo install --locked --git "$repo_url" mittens
 fi
 
 exec "$bin" "$@"
