@@ -9,3 +9,6 @@ contains "$HOME/.local/bin" $fish_user_paths; or set -Ua fish_user_paths "$HOME/
 eval (dircolors $HOME/.dircolors | head -n 1 | sed 's/^LS_COLORS=/set -x LS_COLORS /;s/;$//')
 
 alias cat batcat
+
+# opencode
+fish_add_path /home/jxf/.opencode/bin
